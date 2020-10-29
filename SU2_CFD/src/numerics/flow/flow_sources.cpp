@@ -108,37 +108,23 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
     if (viscous){
 
-      Laminar_Viscosity_i    = V_i[nDim+5];
-      Eddy_Viscosity_i       = V_i[nDim+6];
-      Thermal_Conductivity_i = V_i[nDim+7];
+      su2double laminar_viscosity_i    = V_i[nDim+5];
+      su2double eddy_viscosity_i       = V_i[nDim+6];
+      su2double thermal_conductivity_i = V_i[nDim+7];
+      su2double heat_capacity_cp_i     = V_i[nDim+8];
+      su2double FOUR3                  = 4.0/3.0;
+      su2double ONE3                   = 1.0/3.0;
 
-      su2double u     = V_i[1];
-      su2double v     = V_i[2];
-      su2double mu    = (Laminar_Viscosity_i +
-                         Eddy_Viscosity_i);
-
-      /*--- The full stress tensor is needed for variable density ---*/
-      su2double div_vel = 0.0;
-      for (iDim = 0 ; iDim < nDim; iDim++)
-        div_vel += PrimVar_Grad_i[iDim+1][iDim];
-
-      for (iDim = 0 ; iDim < nDim; iDim++)
-        for (jDim = 0 ; jDim < nDim; jDim++)
-          tau[iDim][jDim] = (mu*(PrimVar_Grad_i[jDim+1][iDim] +
-                                 PrimVar_Grad_i[iDim+1][jDim] )
-                             -TWO3*mu*div_vel*delta[iDim][jDim]);
-
-      su2double tau_xy  = tau[0][1];
-      su2double tau_yyp = tau[1][1];
-      su2double tau_tt  = -TWO3*mu*(div_vel-2*v*yinv);
-
-      su2double qy      = -Thermal_Conductivity_i*PrimVar_Grad_i[0][1];
+      su2double total_viscosity_i = laminar_viscosity_i + eddy_viscosity_i;
+      su2double total_conductivity_i = thermal_conductivity_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
 
       residual[0] -= 0.0;
-      residual[1] -= Volume*(yinv*tau_xy - TWO3*AxiAuxVar_Grad_i[0][0]);
-      residual[2] -= Volume*(yinv*(tau_yyp-tau_tt-TWO3*mu*v*yinv)-TWO3*AxiAuxVar_Grad_i[0][1]);
-      residual[3] -= Volume*(yinv*(u*tau_xy+v*tau_yyp-qy-TWO3*mu*v*v*yinv*AxiAuxVar_Grad_i[1][1])
-                             -AxiAuxVar_Grad_i[2][1]);
+      residual[1] -= yinv*Volume*total_viscosity_i*(PrimVar_Grad_i[1][1]+ONE3*PrimVar_Grad_i[2][0]);
+      residual[2] -= yinv*Volume*total_viscosity_i*FOUR3*(PrimVar_Grad_i[2][1]-U_i[2]/U_i[0]*yinv);
+      residual[3] -= yinv*Volume*(total_viscosity_i*(U_i[1]/U_i[0]*(PrimVar_Grad_i[1][1]
+                                                                    - TWO3*PrimVar_Grad_i[2][0])
+                                                    - FOUR3*U_i[2]/U_i[0]*(PrimVar_Grad_i[1][0]+PrimVar_Grad_i[2][1]))
+                                  + total_conductivity_i*PrimVar_Grad_i[0][1]);
 
     }
   }
