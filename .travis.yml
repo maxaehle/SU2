@@ -18,7 +18,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - max.aehle@scicomp.uni-kl.de
   
 branches:
     only:
